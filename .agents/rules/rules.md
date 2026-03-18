@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # SC Public CLI 项目规则
 
 ## 一、项目概述
@@ -17,6 +21,7 @@
   - `@PathVariable` 使用 `@ApiParam(value = "说明")`
 - Controller 类必须添加 `@Api(tags = "模块名称")` 注解
 - 请求体（`@RequestBody`）对应的 DTO/Entity 类必须添加 `@ApiModel(description = "说明")` 注解
+- 禁止使用Map的方式来返回接口值，这样会造成接口文档响应字段不明确
 
 ### 2.3 设计模式
 - 创建功能需求时，**优先考虑使用设计模式**来降低代码复杂度和提高扩展性：

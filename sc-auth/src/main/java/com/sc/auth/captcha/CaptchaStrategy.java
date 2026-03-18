@@ -1,6 +1,6 @@
 package com.sc.auth.captcha;
 
-import java.util.Map;
+import com.sc.auth.domain.vo.CaptchaVO;
 
 /**
  * 验证码策略接口
@@ -17,7 +17,7 @@ public interface CaptchaStrategy {
      *
      * @return 包含 uuid 和 image(base64) 的 Map
      */
-    Map<String, Object> generate();
+    CaptchaVO generate();
 
     /**
      * 校验验证码

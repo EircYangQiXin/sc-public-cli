@@ -10,6 +10,7 @@ import com.sc.common.core.domain.model.LoginUser;
 import com.sc.common.core.exception.ServiceException;
 import com.sc.common.core.utils.PasswordUtils;
 import com.sc.common.log.event.LoginLogEvent;
+import com.sc.auth.domain.vo.LoginTokenVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -17,8 +18,6 @@ import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * 登录服务
@@ -35,7 +34,7 @@ public class LoginService {
     /**
      * 用户登录
      */
-    public Map<String, Object> login(String username, String password) {
+    public LoginTokenVO login(String username, String password) {
         // 1. 远程调用获取用户信息
         R<SysUserDTO> result = remoteUserService.getUserInfo(username);
         if (!result.isSuccess() || result.getData() == null) {
@@ -78,12 +77,12 @@ public class LoginService {
 
         // 7. 返回 Token 信息
         SaTokenInfo tokenInfo = StpUtil.getTokenInfo();
-        Map<String, Object> tokenMap = new HashMap<>(4);
-        tokenMap.put("access_token", tokenInfo.getTokenValue());
-        tokenMap.put("expires_in", tokenInfo.getTokenTimeout());
+        LoginTokenVO tokenVO = new LoginTokenVO();
+        tokenVO.setAccessToken(tokenInfo.getTokenValue());
+        tokenVO.setExpiresIn(tokenInfo.getTokenTimeout());
 
         log.info("用户登录成功: {}", username);
-        return tokenMap;
+        return tokenVO;
     }
 
     /**
@@ -104,15 +103,15 @@ public class LoginService {
     /**
      * 刷新 Token
      */
-    public Map<String, Object> refreshToken() {
+    public LoginTokenVO refreshToken() {
         StpUtil.checkLogin();
         StpUtil.renewTimeout(1800);
 
         SaTokenInfo tokenInfo = StpUtil.getTokenInfo();
-        Map<String, Object> tokenMap = new HashMap<>(4);
-        tokenMap.put("access_token", tokenInfo.getTokenValue());
-        tokenMap.put("expires_in", tokenInfo.getTokenTimeout());
-        return tokenMap;
+        LoginTokenVO tokenVO = new LoginTokenVO();
+        tokenVO.setAccessToken(tokenInfo.getTokenValue());
+        tokenVO.setExpiresIn(tokenInfo.getTokenTimeout());
+        return tokenVO;
     }
 
     /**

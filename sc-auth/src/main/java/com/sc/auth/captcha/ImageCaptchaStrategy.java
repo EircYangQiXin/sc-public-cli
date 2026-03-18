@@ -3,6 +3,7 @@ package com.sc.auth.captcha;
 import com.google.code.kaptcha.Producer;
 import com.google.code.kaptcha.impl.DefaultKaptcha;
 import com.google.code.kaptcha.util.Config;
+import com.sc.auth.domain.vo.CaptchaVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -11,8 +12,6 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +39,7 @@ public class ImageCaptchaStrategy implements CaptchaStrategy {
     }
 
     @Override
-    public Map<String, Object> generate() {
+    public CaptchaVO generate() {
         // 生成验证码文本
         String code = kaptchaProducer.createText();
         String uuid = UUID.randomUUID().toString().replace("-", "");
@@ -64,10 +63,10 @@ public class ImageCaptchaStrategy implements CaptchaStrategy {
             throw new RuntimeException("验证码生成失败");
         }
 
-        Map<String, Object> result = new HashMap<>(4);
-        result.put("uuid", uuid);
-        result.put("image", base64);
-        return result;
+        CaptchaVO vo = new CaptchaVO();
+        vo.setUuid(uuid);
+        vo.setImage(base64);
+        return vo;
     }
 
     @Override

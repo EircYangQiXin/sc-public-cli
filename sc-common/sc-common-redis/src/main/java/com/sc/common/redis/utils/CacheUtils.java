@@ -7,6 +7,9 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -100,5 +103,91 @@ public class CacheUtils {
         if (lock.isHeldByCurrentThread()) {
             lock.unlock();
         }
+    }
+
+    // ==================== Hash 操作 ====================
+
+    public void hSet(String key, String hashKey, Object value) {
+        redisTemplate.opsForHash().put(key, hashKey, value);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> T hGet(String key, String hashKey) {
+        return (T) redisTemplate.opsForHash().get(key, hashKey);
+    }
+
+    public Map<Object, Object> hGetAll(String key) {
+        return redisTemplate.opsForHash().entries(key);
+    }
+
+    public Long hDel(String key, Object... hashKeys) {
+        return redisTemplate.opsForHash().delete(key, hashKeys);
+    }
+
+    public Boolean hHasKey(String key, String hashKey) {
+        return redisTemplate.opsForHash().hasKey(key, hashKey);
+    }
+
+    // ==================== List 操作 ====================
+
+    public Long lPush(String key, Object value) {
+        return redisTemplate.opsForList().rightPush(key, value);
+    }
+
+    public List<Object> lRange(String key, long start, long end) {
+        return redisTemplate.opsForList().range(key, start, end);
+    }
+
+    public Long lLen(String key) {
+        return redisTemplate.opsForList().size(key);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> T lPop(String key) {
+        return (T) redisTemplate.opsForList().leftPop(key);
+    }
+
+    // ==================== Set 操作 ====================
+
+    public Long sAdd(String key, Object... values) {
+        return redisTemplate.opsForSet().add(key, values);
+    }
+
+    public Set<Object> sMembers(String key) {
+        return redisTemplate.opsForSet().members(key);
+    }
+
+    public Boolean sIsMember(String key, Object value) {
+        return redisTemplate.opsForSet().isMember(key, value);
+    }
+
+    public Long sRemove(String key, Object... values) {
+        return redisTemplate.opsForSet().remove(key, values);
+    }
+
+    // ==================== 限流 ====================
+
+    /**
+     * 滑动窗口限流
+     *
+     * @param key           限流 Key
+     * @param maxCount      窗口内最大允许次数
+     * @param windowSeconds 窗口时间（秒）
+     * @return true=允许通过, false=已被限流
+     */
+    public boolean rateLimiter(String key, int maxCount, int windowSeconds) {
+        long now = System.currentTimeMillis();
+        String member = String.valueOf(now);
+        long windowStart = now - windowSeconds * 1000L;
+
+        // 添加当前请求
+        redisTemplate.opsForZSet().add(key, member, now);
+        // 移除窗口外的数据
+        redisTemplate.opsForZSet().removeRangeByScore(key, 0, windowStart);
+        // 设置过期时间（比窗口多 1 秒，自动清理）
+        redisTemplate.expire(key, windowSeconds + 1, TimeUnit.SECONDS);
+        // 统计窗口内请求数
+        Long count = redisTemplate.opsForZSet().zCard(key);
+        return count != null && count <= maxCount;
     }
 }
