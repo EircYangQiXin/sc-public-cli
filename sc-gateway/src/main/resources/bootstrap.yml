@@ -1,0 +1,69 @@
+spring:
+  application:
+    name: sc-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:dev}
+      config:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:dev}
+        file-extension: yml
+        shared-configs:
+          - data-id: application-common.yml
+            group: DEFAULT_GROUP
+            refresh: true
+    gateway:
+      routes:
+        # 认证服务
+        - id: sc-auth
+          uri: lb://sc-auth
+          predicates:
+            - Path=/auth/**
+        # 系统管理服务
+        - id: sc-system
+          uri: lb://sc-system
+          predicates:
+            - Path=/system/**
+        # 示例服务
+        - id: sc-demo
+          uri: lb://sc-demo
+          predicates:
+            - Path=/demo/**
+    sentinel:
+      transport:
+        dashboard: ${SENTINEL_ADDR:localhost:8080}
+        port: 8719
+
+server:
+  port: 8080
+
+# Sa-Token
+sa-token:
+  token-name: Authorization
+  timeout: 86400
+  active-timeout: 1800
+  is-concurrent: true
+  is-share: true
+  token-style: uuid
+  is-read-cookie: false
+
+# Knife4j Gateway 聚合文档
+knife4j:
+  gateway:
+    enabled: true
+    strategy: discover
+    discover:
+      enabled: true
+      version: swagger2
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  metrics:
+    tags:
+      application: ${spring.application.name}

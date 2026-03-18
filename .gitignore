@@ -1,0 +1,32 @@
+# Compiled
+target/
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# Maven
+*.jar
+*.war
+*.ear
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Docker data
+docker/data/
+
+# Package files
+*.gz
+*.zip
+*.tar

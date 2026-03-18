@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.sc</groupId>
+    <artifactId>sc-dependencies</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+
+    <name>SC Dependencies BOM</name>
+    <description>统一依赖版本管理 BOM</description>
+
+    <properties>
+        <!-- Spring 体系 -->
+        <spring-boot.version>2.7.18</spring-boot.version>
+        <spring-cloud.version>2021.0.8</spring-cloud.version>
+        <spring-cloud-alibaba.version>2021.0.5.0</spring-cloud-alibaba.version>
+
+        <!-- 数据库 -->
+        <mybatis-plus.version>3.5.5</mybatis-plus.version>
+        <druid.version>1.2.21</druid.version>
+        <flyway.version>8.5.13</flyway.version>
+        <mysql.version>8.0.33</mysql.version>
+
+        <!-- 安全 -->
+        <sa-token.version>1.37.0</sa-token.version>
+
+        <!-- 中间件 -->
+        <redisson.version>3.25.2</redisson.version>
+        <seata.version>1.7.1</seata.version>
+        <xxl-job.version>2.4.0</xxl-job.version>
+        <aws-s3.version>1.12.626</aws-s3.version>
+
+        <!-- 工具 -->
+        <knife4j.version>4.4.0</knife4j.version>
+        <hutool.version>5.8.25</hutool.version>
+        <lombok.version>1.18.30</lombok.version>
+        <mapstruct.version>1.5.5.Final</mapstruct.version>
+        <transmittable-thread-local.version>2.14.5</transmittable-thread-local.version>
+
+        <!-- 内部模块版本 -->
+        <sc.version>1.0.0</sc.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- ==================== Spring BOM ==================== -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- ==================== 数据库 ==================== -->
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-boot-starter</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-annotation</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>druid-spring-boot-starter</artifactId>
+                <version>${druid.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-core</artifactId>
+                <version>${flyway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-mysql</artifactId>
+                <version>${flyway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>mysql</groupId>
+                <artifactId>mysql-connector-java</artifactId>
+                <version>${mysql.version}</version>
+            </dependency>
+
+            <!-- ==================== 安全 (Sa-Token) ==================== -->
+            <dependency>
+                <groupId>cn.dev33</groupId>
+                <artifactId>sa-token-spring-boot-starter</artifactId>
+                <version>${sa-token.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.dev33</groupId>
+                <artifactId>sa-token-reactor-spring-boot-starter</artifactId>
+                <version>${sa-token.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.dev33</groupId>
+                <artifactId>sa-token-dao-redis-jackson</artifactId>
+                <version>${sa-token.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.dev33</groupId>
+                <artifactId>sa-token-core</artifactId>
+                <version>${sa-token.version}</version>
+            </dependency>
+
+            <!-- ==================== 中间件 ==================== -->
+            <dependency>
+                <groupId>org.redisson</groupId>
+                <artifactId>redisson-spring-boot-starter</artifactId>
+                <version>${redisson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.seata</groupId>
+                <artifactId>seata-spring-boot-starter</artifactId>
+                <version>${seata.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.xuxueli</groupId>
+                <artifactId>xxl-job-core</artifactId>
+                <version>${xxl-job.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.amazonaws</groupId>
+                <artifactId>aws-java-sdk-s3</artifactId>
+                <version>${aws-s3.version}</version>
+            </dependency>
+
+            <!-- ==================== 工具 ==================== -->
+            <dependency>
+                <groupId>com.github.xiaoymin</groupId>
+                <artifactId>knife4j-openapi2-spring-boot-starter</artifactId>
+                <version>${knife4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.xiaoymin</groupId>
+                <artifactId>knife4j-gateway-spring-boot-starter</artifactId>
+                <version>${knife4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-all</artifactId>
+                <version>${hutool.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>transmittable-thread-local</artifactId>
+                <version>${transmittable-thread-local.version}</version>
+            </dependency>
+
+            <!-- ==================== 内部模块 ==================== -->
+            <dependency>
+                <groupId>com.sc</groupId>
+                <artifactId>sc-common-core</artifactId>
+                <version>${sc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sc</groupId>
+                <artifactId>sc-common-redis</artifactId>
+                <version>${sc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sc</groupId>
+                <artifactId>sc-common-mybatis</artifactId>
+                <version>${sc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sc</groupId>
+                <artifactId>sc-common-security</artifactId>
+                <version>${sc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sc</groupId>
+                <artifactId>sc-common-swagger</artifactId>
+                <version>${sc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sc</groupId>
+                <artifactId>sc-common-log</artifactId>
+                <version>${sc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sc</groupId>
+                <artifactId>sc-common-oss</artifactId>
+                <version>${sc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sc</groupId>
+                <artifactId>sc-common-mq</artifactId>
+                <version>${sc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sc</groupId>
+                <artifactId>sc-common-seata</artifactId>
+                <version>${sc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sc</groupId>
+                <artifactId>sc-common-xxljob</artifactId>
+                <version>${sc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sc</groupId>
+                <artifactId>sc-api-system</artifactId>
+                <version>${sc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sc</groupId>
+                <artifactId>sc-api-auth</artifactId>
+                <version>${sc.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+</project>

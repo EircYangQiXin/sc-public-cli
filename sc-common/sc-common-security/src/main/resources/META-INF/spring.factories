@@ -1,0 +1,5 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  com.sc.common.security.config.SecurityConfig,\
+  com.sc.common.security.handler.SecurityInterceptor,\
+  com.sc.common.security.handler.StpInterfaceImpl,\
+  com.sc.common.security.feign.FeignTokenInterceptor

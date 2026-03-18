@@ -1,0 +1,144 @@
+version: '3.8'
+
+services:
+  # ==================== 基础中间件 ====================
+  mysql:
+    image: mysql:8.0
+    container_name: sc-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      TZ: Asia/Shanghai
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+      - ../sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: sc-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data/redis:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+  # ==================== 注册/配置中心 ====================
+  nacos:
+    image: nacos/nacos-server:v2.2.3
+    container_name: sc-nacos
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    environment:
+      MODE: standalone
+      SPRING_DATASOURCE_PLATFORM: mysql
+      MYSQL_SERVICE_HOST: mysql
+      MYSQL_SERVICE_PORT: 3306
+      MYSQL_SERVICE_USER: root
+      MYSQL_SERVICE_PASSWORD: root
+      MYSQL_SERVICE_DB_NAME: nacos
+      JVM_XMS: 256m
+      JVM_XMX: 256m
+    depends_on:
+      - mysql
+    restart: unless-stopped
+
+  # ==================== 限流熔断 ====================
+  sentinel:
+    image: bladex/sentinel-dashboard:1.8.6
+    container_name: sc-sentinel
+    ports:
+      - "8858:8858"
+    restart: unless-stopped
+
+  # ==================== 消息队列 ====================
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: sc-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - ./data/rabbitmq:/var/lib/rabbitmq
+    restart: unless-stopped
+
+  # ==================== 对象存储 ====================
+  minio:
+    image: minio/minio:latest
+    container_name: sc-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - ./data/minio:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+
+  # ==================== 分布式事务 ====================
+  seata:
+    image: seataio/seata-server:1.7.1
+    container_name: sc-seata
+    ports:
+      - "8091:8091"
+      - "7091:7091"
+    environment:
+      SEATA_PORT: 8091
+      STORE_MODE: db
+    restart: unless-stopped
+
+  # ==================== 定时任务 ====================
+  xxl-job-admin:
+    image: xuxueli/xxl-job-admin:2.4.0
+    container_name: sc-xxljob
+    ports:
+      - "8081:8080"
+    environment:
+      PARAMS: >-
+        --spring.datasource.url=jdbc:mysql://mysql:3306/xxl_job?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai
+        --spring.datasource.username=root
+        --spring.datasource.password=root
+    depends_on:
+      - mysql
+    restart: unless-stopped
+
+  # ==================== 链路追踪 ====================
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: sc-zipkin
+    ports:
+      - "9411:9411"
+    restart: unless-stopped
+
+  # ==================== 监控 ====================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: sc-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: sc-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
