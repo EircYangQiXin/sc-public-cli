@@ -214,8 +214,8 @@ INSERT INTO `sys_dept` VALUES (1, 0, '0', '总部', 0, 'admin', '15888888888', '
 INSERT INTO `sys_dept` VALUES (2, 1, '0,1', '研发部', 1, NULL, NULL, '0', 0, NULL, 'system', NOW(), '', NULL);
 INSERT INTO `sys_dept` VALUES (3, 1, '0,1', '运营部', 2, NULL, NULL, '0', 0, NULL, 'system', NOW(), '', NULL);
 
--- 默认管理员 (密码: admin123, 实际部署时请加密)
-INSERT INTO `sys_user` VALUES (1, 1, 'admin', '超级管理员', 'admin@sc.com', '15888888888', '0', '', 'admin123', '0', 0, NULL, 'system', NOW(), '', NULL);
+-- 默认管理员 (密码: admin123, BCrypt 加密)
+INSERT INTO `sys_user` VALUES (1, 1, 'admin', '超级管理员', 'admin@sc.com', '15888888888', '0', '', '$2a$10$7JB720yubVSZvUI0rEqK/.VqGOZTH.ulu33dHOiBE8ByOhJIrdAu2', '0', 0, NULL, 'system', NOW(), '', NULL);
 
 -- 默认角色
 INSERT INTO `sys_role` VALUES (1, '超级管理员', 'admin', 1, 1, '0', 0, NULL, 'system', NOW(), '', NULL);
@@ -250,3 +250,86 @@ INSERT INTO `sys_role_menu` VALUES (1, 1004);
 
 -- Demo 数据库
 CREATE DATABASE IF NOT EXISTS `sc_demo` DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_general_ci;
+
+-- =============================================
+-- Nacos 配置中心数据库 (docker-compose Nacos 使用)
+-- =============================================
+CREATE DATABASE IF NOT EXISTS `nacos` DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_general_ci;
+
+-- =============================================
+-- XXL-Job 调度中心数据库 (docker-compose XXL-Job 使用)
+-- =============================================
+CREATE DATABASE IF NOT EXISTS `xxl_job` DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_general_ci;
+
+-- =============================================
+-- Seata 分布式事务数据库 (docker-compose Seata DB 模式使用)
+-- =============================================
+CREATE DATABASE IF NOT EXISTS `seata` DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_general_ci;
+USE `seata`;
+
+-- Seata Server DB 模式所需核心表 (v1.7.x)
+DROP TABLE IF EXISTS `global_table`;
+CREATE TABLE `global_table` (
+    `xid`                       VARCHAR(128)  NOT NULL,
+    `transaction_id`            BIGINT,
+    `status`                    TINYINT       NOT NULL,
+    `application_id`            VARCHAR(32),
+    `transaction_service_group` VARCHAR(32),
+    `transaction_name`          VARCHAR(128),
+    `timeout`                   INT,
+    `begin_time`                BIGINT,
+    `application_data`          VARCHAR(2000),
+    `gmt_create`                DATETIME,
+    `gmt_modified`              DATETIME,
+    PRIMARY KEY (`xid`),
+    KEY `idx_status_gmt_modified` (`status`, `gmt_modified`),
+    KEY `idx_transaction_id` (`transaction_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Seata 全局事务表';
+
+DROP TABLE IF EXISTS `branch_table`;
+CREATE TABLE `branch_table` (
+    `branch_id`         BIGINT        NOT NULL,
+    `xid`               VARCHAR(128)  NOT NULL,
+    `transaction_id`    BIGINT,
+    `resource_group_id` VARCHAR(32),
+    `resource_id`       VARCHAR(256),
+    `branch_type`       VARCHAR(8),
+    `status`            TINYINT,
+    `client_id`         VARCHAR(64),
+    `application_data`  VARCHAR(2000),
+    `gmt_create`        DATETIME(6),
+    `gmt_modified`      DATETIME(6),
+    PRIMARY KEY (`branch_id`),
+    KEY `idx_xid` (`xid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Seata 分支事务表';
+
+DROP TABLE IF EXISTS `lock_table`;
+CREATE TABLE `lock_table` (
+    `row_key`        VARCHAR(128) NOT NULL,
+    `xid`            VARCHAR(128),
+    `transaction_id` BIGINT,
+    `branch_id`      BIGINT       NOT NULL,
+    `resource_id`    VARCHAR(256),
+    `table_name`     VARCHAR(32),
+    `pk`             VARCHAR(36),
+    `status`         TINYINT      NOT NULL DEFAULT 0 COMMENT '0:locked ,1:rollbacking',
+    `gmt_create`     DATETIME,
+    `gmt_modified`   DATETIME,
+    PRIMARY KEY (`row_key`),
+    KEY `idx_branch_id` (`branch_id`),
+    KEY `idx_xid` (`xid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Seata 全局锁表';
+
+DROP TABLE IF EXISTS `distributed_lock`;
+CREATE TABLE `distributed_lock` (
+    `lock_key`   CHAR(20)    NOT NULL,
+    `lock_value` VARCHAR(20) NOT NULL,
+    `expire`     BIGINT,
+    PRIMARY KEY (`lock_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Seata 分布式锁表';
+
+INSERT INTO `distributed_lock` (lock_key, lock_value, expire) VALUES ('AsyncCommitting', ' ', 0);
+INSERT INTO `distributed_lock` (lock_key, lock_value, expire) VALUES ('RetryCommitting', ' ', 0);
+INSERT INTO `distributed_lock` (lock_key, lock_value, expire) VALUES ('RetryRollbacking', ' ', 0);
+INSERT INTO `distributed_lock` (lock_key, lock_value, expire) VALUES ('TxTimeoutCheck', ' ', 0);
+

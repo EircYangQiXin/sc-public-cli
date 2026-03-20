@@ -79,4 +79,76 @@ public class OssTemplate {
             log.info("Created OSS bucket: {}", bucketName);
         }
     }
+
+    /**
+     * 获取 STS 临时凭证（前端直传使用）
+     * <p>
+     * 流程：后端通过 AssumeRole 获取临时 AK/SK/Token → 返回给前端 →
+     * 前端使用临时凭证直接上传到 OSS/S3，不经过后端服务器。
+     * </p>
+     *
+     * @param uploadPath 上传路径前缀（可选，用于限制上传目录）
+     * @return STS 临时凭证
+     */
+    public com.sc.common.oss.domain.StsTokenVO getStsToken(String uploadPath) {
+        String roleArn = properties.getRoleArn();
+        if (roleArn == null || roleArn.isEmpty()) {
+            throw new RuntimeException("STS roleArn 未配置，请设置 sc.oss.role-arn");
+        }
+
+        // 构建 STS 客户端
+        com.amazonaws.auth.AWSStaticCredentialsProvider credentialsProvider =
+                new com.amazonaws.auth.AWSStaticCredentialsProvider(
+                        new com.amazonaws.auth.BasicAWSCredentials(
+                                properties.getAccessKey(), properties.getSecretKey()));
+
+        com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder stsBuilder =
+                com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder.standard()
+                        .withCredentials(credentialsProvider);
+
+        // 自定义 STS 端点（MinIO 等私有云场景）
+        if (properties.getStsEndpoint() != null && !properties.getStsEndpoint().isEmpty()) {
+            stsBuilder.withEndpointConfiguration(
+                    new com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration(
+                            properties.getStsEndpoint(), properties.getRegion()));
+        } else {
+            stsBuilder.withRegion(properties.getRegion());
+        }
+
+        com.amazonaws.services.securitytoken.AWSSecurityTokenService stsClient = stsBuilder.build();
+
+        // 构建 AssumeRole 请求
+        com.amazonaws.services.securitytoken.model.AssumeRoleRequest assumeRoleRequest =
+                new com.amazonaws.services.securitytoken.model.AssumeRoleRequest()
+                        .withRoleArn(roleArn)
+                        .withRoleSessionName(properties.getRoleSessionName())
+                        .withDurationSeconds(properties.getStsDurationSeconds());
+
+        // 可选：限制上传目录的策略
+        if (uploadPath != null && !uploadPath.isEmpty()) {
+            String policy = String.format(
+                    "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\","
+                            + "\"Action\":[\"s3:PutObject\"],\"Resource\":\"arn:aws:s3:::%s/%s*\"}]}",
+                    properties.getBucketName(), uploadPath);
+            assumeRoleRequest.withPolicy(policy);
+        }
+
+        // 调用 STS
+        com.amazonaws.services.securitytoken.model.AssumeRoleResult result =
+                stsClient.assumeRole(assumeRoleRequest);
+        com.amazonaws.services.securitytoken.model.Credentials credentials = result.getCredentials();
+
+        // 构建返回值
+        com.sc.common.oss.domain.StsTokenVO vo = new com.sc.common.oss.domain.StsTokenVO();
+        vo.setAccessKeyId(credentials.getAccessKeyId());
+        vo.setSecretAccessKey(credentials.getSecretAccessKey());
+        vo.setSessionToken(credentials.getSessionToken());
+        vo.setExpiration(credentials.getExpiration());
+        vo.setBucketName(properties.getBucketName());
+        vo.setEndpoint(properties.getEndpoint());
+        vo.setRegion(properties.getRegion());
+        vo.setUploadPath(uploadPath);
+
+        return vo;
+    }
 }

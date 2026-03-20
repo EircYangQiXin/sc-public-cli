@@ -19,4 +19,13 @@ public class LoginTokenVO implements Serializable {
 
     @ApiModelProperty(value = "令牌过期时间（秒）", example = "1800")
     private long expiresIn;
+
+    @ApiModelProperty(value = "是否需要 MFA 验证", example = "false")
+    private Boolean mfaRequired;
+
+    @ApiModelProperty(value = "MFA 临时令牌（mfaRequired=true 时返回）")
+    private String mfaToken;
+
+    @ApiModelProperty(value = "是否需要修改密码（密码已过期）", example = "false")
+    private Boolean needChangePassword;
 }

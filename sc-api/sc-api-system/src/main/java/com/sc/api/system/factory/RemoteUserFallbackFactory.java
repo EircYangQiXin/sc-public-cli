@@ -22,6 +22,11 @@ public class RemoteUserFallbackFactory implements FallbackFactory<RemoteUserServ
             public R<SysUserDTO> getUserInfo(String username) {
                 return R.fail("获取用户信息失败: " + cause.getMessage());
             }
+
+            @Override
+            public R<Void> updateUserMfa(SysUserDTO dto) {
+                return R.fail("更新用户MFA信息失败: " + cause.getMessage());
+            }
         };
     }
 }

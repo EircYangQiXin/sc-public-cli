@@ -37,7 +37,7 @@ spring:
         port: 8719
 
 server:
-  port: 8080
+  port: 8858
 
 # Sa-Token
 sa-token:

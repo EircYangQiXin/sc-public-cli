@@ -124,4 +124,34 @@ public final class JsonUtils {
     public static <T> T copy(Object source, Class<T> targetClass) {
         return fromJson(toJson(source), targetClass);
     }
+
+    /**
+     * JSON 字符串转 JsonNode 树
+     */
+    public static com.fasterxml.jackson.databind.JsonNode parseTree(String json) {
+        if (json == null || json.isEmpty()) {
+            return OBJECT_MAPPER.createObjectNode();
+        }
+        try {
+            return OBJECT_MAPPER.readTree(json);
+        } catch (JsonProcessingException e) {
+            log.error("JSON 解析为 Tree 失败", e);
+            throw new RuntimeException("JSON 解析失败", e);
+        }
+    }
+
+    /**
+     * JSON 字符串转泛型对象（支持复杂泛型如 List&lt;T&gt;）
+     */
+    public static <T> T parseObject(String json, TypeReference<T> typeReference) {
+        if (json == null || json.isEmpty()) {
+            return null;
+        }
+        try {
+            return OBJECT_MAPPER.readValue(json, typeReference);
+        } catch (JsonProcessingException e) {
+            log.error("JSON 泛型反序列化失败", e);
+            throw new RuntimeException("JSON 反序列化失败", e);
+        }
+    }
 }

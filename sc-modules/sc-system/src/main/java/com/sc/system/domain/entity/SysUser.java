@@ -9,6 +9,8 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.time.LocalDateTime;
+
 /**
  * 系统用户实体
  */
@@ -51,4 +53,13 @@ public class SysUser extends BaseEntity {
 
     @ApiModelProperty(value = "租户ID")
     private Long tenantId;
+
+    @ApiModelProperty(value = "密码最后修改时间")
+    private LocalDateTime passwordUpdateTime;
+
+    @ApiModelProperty(value = "MFA密钥(Base32)")
+    private String mfaSecret;
+
+    @ApiModelProperty(value = "是否启用MFA (0否 1是)", example = "0")
+    private Integer mfaEnabled;
 }

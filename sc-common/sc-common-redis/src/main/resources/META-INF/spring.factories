@@ -1,2 +1,3 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  com.sc.common.redis.config.RedisConfig
+  com.sc.common.redis.config.RedisConfig,\
+  com.sc.common.redis.aspect.RepeatSubmitAspect

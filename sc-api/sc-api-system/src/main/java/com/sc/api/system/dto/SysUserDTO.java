@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Set;
 
 /**
@@ -48,4 +49,13 @@ public class SysUserDTO implements Serializable {
 
     @ApiModelProperty(value = "数据权限关联部门ID集合")
     private Set<Long> dataScopeDeptIds;
+
+    @ApiModelProperty(value = "密码最后修改时间")
+    private LocalDateTime passwordUpdateTime;
+
+    @ApiModelProperty(value = "是否启用MFA")
+    private Integer mfaEnabled;
+
+    @ApiModelProperty(value = "MFA密钥", hidden = true)
+    private String mfaSecret;
 }

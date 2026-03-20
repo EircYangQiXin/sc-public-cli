@@ -29,4 +29,13 @@ public class LoginBody implements Serializable {
 
     @ApiModelProperty(value = "验证码UUID")
     private String uuid;
+
+    @ApiModelProperty(value = "MFA验证码 (6位数字)")
+    private String mfaCode;
+
+    @ApiModelProperty(value = "设备指纹 (由前端生成的设备唯一标识)")
+    private String deviceFingerprint;
+
+    @ApiModelProperty(value = "是否信任当前设备 (MFA验证成功后)")
+    private Boolean trustDevice;
 }

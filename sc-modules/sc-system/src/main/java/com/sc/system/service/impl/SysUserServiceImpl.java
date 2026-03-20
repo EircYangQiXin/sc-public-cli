@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -65,17 +66,17 @@ public class SysUserServiceImpl implements ISysUserService {
 
         // 查询用户角色
         Set<String> roles = roleMapper.selectRoleKeysByUserId(user.getUserId());
-        dto.setRoles(roles != null ? roles : new HashSet<>());
+        dto.setRoles(roles != null ? roles : new HashSet<String>());
 
         // 超级管理员拥有所有权限
         Set<String> permissions;
         if (roles != null && roles.contains("admin")) {
-            permissions = new HashSet<>();
+            permissions = new HashSet<String>();
             permissions.add("*:*:*");
         } else {
             permissions = menuMapper.selectPermsByUserId(user.getUserId());
         }
-        dto.setPermissions(permissions != null ? permissions : new HashSet<>());
+        dto.setPermissions(permissions != null ? permissions : new HashSet<String>());
 
         return dto;
     }
@@ -91,15 +92,18 @@ public class SysUserServiceImpl implements ISysUserService {
 
     @Override
     public void insertUser(SysUser user) {
+        // 密码策略校验由调用方（如 AuthController 修改密码接口）负责
         user.setPassword(PasswordUtils.encode(user.getPassword()));
+        user.setPasswordUpdateTime(LocalDateTime.now());
         userMapper.insert(user);
     }
 
     @Override
     public void updateUser(SysUser user) {
-        // 如果传入了新密码则加密
+        // 如果传入了新密码则加密并更新密码修改时间
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {
             user.setPassword(PasswordUtils.encode(user.getPassword()));
+            user.setPasswordUpdateTime(LocalDateTime.now());
         }
         userMapper.updateById(user);
     }

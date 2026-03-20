@@ -8,6 +8,7 @@ import com.sc.auth.service.LoginService;
 import com.sc.common.core.domain.R;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -42,8 +43,24 @@ public class AuthController {
             }
         }
 
-        LoginTokenVO result = loginService.login(loginBody.getUsername(), loginBody.getPassword());
+        LoginTokenVO result = loginService.login(
+                loginBody.getUsername(),
+                loginBody.getPassword(),
+                loginBody.getMfaCode(),
+                loginBody.getDeviceFingerprint(),
+                loginBody.getTrustDevice());
         return R.ok("登录成功", result);
+    }
+
+    @ApiOperation("MFA 验证（两步登录第二步）")
+    @PostMapping("/mfa/verify")
+    public R<LoginTokenVO> verifyMfa(
+            @ApiParam(value = "MFA 临时令牌", required = true) @RequestParam String mfaToken,
+            @ApiParam(value = "TOTP 验证码", required = true) @RequestParam String mfaCode,
+            @ApiParam(value = "设备指纹") @RequestParam(required = false) String deviceFingerprint,
+            @ApiParam(value = "是否信任当前设备") @RequestParam(required = false) Boolean trustDevice) {
+        LoginTokenVO result = loginService.verifyMfa(mfaToken, mfaCode, deviceFingerprint, trustDevice);
+        return R.ok("MFA 验证成功", result);
     }
 
     @ApiOperation("用户退出")

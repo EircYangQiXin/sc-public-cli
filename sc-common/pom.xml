@@ -24,6 +24,9 @@
         <module>sc-common-mq</module>
         <module>sc-common-seata</module>
         <module>sc-common-xxljob</module>
+        <module>sc-common-trace</module>
+        <module>sc-common-excel</module>
+        <module>sc-common-notify</module>
     </modules>
 
 </project>

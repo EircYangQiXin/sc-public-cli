@@ -1,161 +1,176 @@
-# SC Public CLI — Spring Cloud 微服务脚手架
+# SC Public CLI - 微服务脚手架
+
+基于 **JDK 8 + Spring Boot 2.7 + Spring Cloud 2021** 的微服务脚手架项目。
 
 ## 技术栈
 
-| 分层 | 技术 |
-|---|---|
-| 基础框架 | Spring Boot 2.7.x + Spring Cloud 2021.0.x + JDK 8 |
-| 注册/配置 | Nacos 2.2.x（多环境 namespace 隔离） |
-| 网关 | Spring Cloud Gateway |
-| 权限认证 | Sa-Token |
-| 数据库 | MySQL 8 + MyBatis-Plus + Flyway |
-| 缓存 | Redis + Redisson |
-| 接口文档 | Knife4j (OpenAPI) |
-| 熔断限流 | Sentinel |
-| 对象存储 | MinIO / S3 兼容 |
-| 定时任务 | XXL-JOB |
-| 消息队列 | RabbitMQ |
-| 分布式事务 | Seata AT 模式 |
-| 链路追踪 | Sleuth + Zipkin |
-| 监控 | Actuator + Prometheus + Grafana |
+| 组件 | 技术 | 版本 |
+|---|---|---|
+| 权限认证 | Sa-Token | 1.37.0 |
+| 注册/配置中心 | Nacos | 2021.0.5 |
+| 网关 | Spring Cloud Gateway | 2021.0.8 |
+| ORM | MyBatis-Plus | 3.5.5 |
+| 缓存 | Redis + Redisson | 3.25.2 |
+| 消息队列 | RabbitMQ | — |
+| 对象存储 | AWS S3 协议（兼容 MinIO） | 1.12.626 |
+| 接口文档 | Knife4j (OpenAPI 2) | 4.4.0 |
+| 分布式事务 | Seata | 1.7.1 |
+| 任务调度 | XXL-Job | 2.4.0 |
+| 链路追踪 | Sleuth + Zipkin | — |
+| 监控 | Actuator + Prometheus | — |
 
-## 模块结构
+## 项目结构
 
 ```
-sc-public-cli/
-├── sc-dependencies       # BOM 版本管理
-├── sc-common             # 通用模块集合
-│   ├── sc-common-core    # 统一响应/全局异常/工具类
-│   ├── sc-common-redis   # Redis + Redisson 封装
-│   ├── sc-common-mybatis # MyBatis-Plus + 数据权限 + 多租户(预留)
-│   ├── sc-common-security# Sa-Token 权限封装
-│   ├── sc-common-swagger # Knife4j 文档配置
-│   ├── sc-common-log     # 操作日志注解 + AOP
-│   ├── sc-common-oss     # S3 对象存储封装
-│   ├── sc-common-mq      # RabbitMQ 配置
-│   ├── sc-common-seata   # Seata 分布式事务
-│   └── sc-common-xxljob  # XXL-JOB 执行器配置
-├── sc-api                # Feign 远程调用接口层
-├── sc-auth               # 认证服务(登录/Token)
-├── sc-gateway            # 统一网关
+sc-public-cli
+├── sc-gateway          # 网关服务（鉴权、路由、限流）
+├── sc-auth             # 认证服务（登录、验证码、令牌管理）
 ├── sc-modules
-│   ├── sc-system         # 系统管理(用户/角色/菜单/部门/字典)
-│   └── sc-demo           # 示例业务服务
-├── sql/                  # 数据库初始化脚本
-├── docker/               # Docker Compose 环境
-└── docs/                 # 项目文档
+│   ├── sc-system       # 系统管理（用户/角色/菜单/字典/配置/日志/OSS）
+│   └── sc-demo         # 示例服务
+├── sc-api
+│   └── sc-api-system   # System 模块 Feign API
+├── sc-common
+│   ├── sc-common-core      # 核心工具（R/异常/上下文/工具类）
+│   ├── sc-common-redis     # Redis 缓存（CacheUtils/限流/防重复提交）
+│   ├── sc-common-mybatis   # MyBatis-Plus（数据权限/租户/加密/批量插入）
+│   ├── sc-common-security  # 安全模块（拦截器/权限/Feign 令牌透传）
+│   ├── sc-common-swagger   # 接口文档（Knife4j 自动配置）
+│   ├── sc-common-log       # 操作日志（注解+切面+事件）
+│   ├── sc-common-oss       # 对象存储（S3 + STS 前端直传）
+│   ├── sc-common-mq        # 消息队列（RabbitMQ 工具封装）
+│   ├── sc-common-seata     # 分布式事务
+│   ├── sc-common-xxljob    # 任务调度
+│   └── sc-common-trace     # 链路追踪与监控（Sleuth/Zipkin/Actuator/Micrometer 统一管理）
+├── sc-dependencies     # 依赖版本 BOM
+├── sql                 # 数据库脚本
+└── docker              # Docker 部署配置
 ```
 
 ## 快速开始
 
-### 1. 启动中间件
+### 环境要求
+
+- JDK 8+
+- Maven 3.6+
+- MySQL 8.0+
+- Redis 6.0+
+- Nacos 2.x
+
+### 构建
 
 ```bash
-cd docker
-docker compose up -d
-```
-
-### 2. 初始化数据库
-
-```bash
-# 方式1: Docker 已自动执行 sql/init.sql
-# 方式2: 手动执行
-mysql -uroot -proot < sql/init.sql
-```
-
-### 3. 配置 Nacos
-
-1. 访问 `http://localhost:8848/nacos`（默认账号: nacos/nacos）
-2. 创建命名空间: `dev`, `test`, `prod`
-3. 在 `dev` 空间下创建共享配置 `application-common.yml`：
-
-```yaml
-spring:
-  redis:
-    host: localhost
-    port: 6379
-  zipkin:
-    base-url: http://localhost:9411
-  sleuth:
-    sampler:
-      probability: 1.0
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"
-```
-
-### 4. 启动服务（按顺序）
-
-```bash
-# 1. 编译
 mvn clean install -DskipTests
-
-# 2. 启动顺序
-ScGatewayApplication      # 网关 :8080
-ScAuthApplication         # 认证 :9200
-ScSystemApplication       # 系统 :9201
-ScDemoApplication         # 示例 :9202
 ```
 
-### 5. 访问
+### 启动顺序
 
-| 服务 | 地址 |
-|---|---|
-| 网关 | http://localhost:8080 |
-| 聚合文档 | http://localhost:8080/doc.html |
-| Nacos | http://localhost:8848/nacos |
-| Sentinel | http://localhost:8858 |
-| RabbitMQ | http://localhost:15672 |
-| MinIO | http://localhost:9001 |
-| XXL-JOB | http://localhost:8081/xxl-job-admin |
-| Zipkin | http://localhost:9411 |
-| Prometheus | http://localhost:9090 |
-| Grafana | http://localhost:3000 (admin/admin) |
+1. Nacos、MySQL、Redis
+2. `sc-gateway` (端口 8080)
+3. `sc-auth` (端口 9200)
+4. `sc-system` (端口 9201)
 
-## 如何新增业务模块
+### 默认账号
 
-1. 在 `sc-modules/` 下新建子模块，参照 `sc-demo` 的 POM 和配置
-2. 如需对外暴露 Feign 接口，在 `sc-api/` 下新建对应的 API 模块
-3. 在 `sc-gateway` 的 `bootstrap.yml` 中添加路由规则
-4. 在根 `pom.xml` 的 `<modules>` 中注册新模块
+- 用户名：`admin`
+- 密码：`admin123`
 
-## 环境隔离
+### 接口文档
 
-通过启动参数切换环境：
+启动后访问网关聚合文档：`http://localhost:8080/doc.html`
 
-```bash
-# 开发环境
--DNACOS_NAMESPACE=dev
+## 内置功能
 
-# 测试环境
--DNACOS_NAMESPACE=test
+- ✅ 用户/角色/菜单/部门/字典/配置管理
+- ✅ BCrypt 密码加密
+- ✅ 操作日志 + 登录日志（异步持久化）
+- ✅ 验证码（Kaptcha 图片 + Redis 存储）
+- ✅ 敏感字段加密（@EncryptField + AES TypeHandler）
+- ✅ 防重复提交（@RepeatSubmit + Redis SETNX）
+- ✅ 文件上传（服务端代理 + STS 前端直传）
+- ✅ 数据权限 + 多租户
+- ✅ Redis 工具（KV/Hash/List/Set/限流/分布式锁）
+- ✅ RabbitMQ 工具（4 种发送模式）
+- ✅ 通用工具（ServletUtils/AssertUtils/JsonUtils/DateUtils）
 
-# 生产环境
--DNACOS_NAMESPACE=prod
+## 需要注意配置项
+```
+sc:
+  # 灰度路由配置
+  gateway:
+    gray:
+      enabled: true
+      # 签名密钥（用于内部网段校验）
+      sign-secret: your-sign-secret-here
+      # 允许访问的内部网段
+      allowed-sources:
+        - [IP_ADDRESS]
+        - [IP_ADDRESS]
+```
+IP 可信代理: 若网关前有 Nginx/LB，请开启 sc.gateway.ip-access.trust-proxy=true 并配置 trusted-proxies
+灰度安全: 至少配置 sc.gateway.gray.sign-secret 或 sc.gateway.gray.allowed-sources 之一
+
+灰度签名调用方式变更
+客户端现在需要按以下方式构造灰度请求：
+
+```
+timestamp = System.currentTimeMillis()
+sign = Hex(HmacSHA256("serviceId:timestamp", signSecret))
+Headers:
+  X-Gray-Tag: gray
+  X-Gray-Timestamp: {timestamp}
+  X-Gray-Sign: {sign}
 ```
 
-## 数据权限
+sc:
+  security:
+    lock:
+      max-attempts: 5
+      lock-minutes: 30
+    password:
+      min-length: 8
+      expire-days: 90
+    mfa:
+      force-enabled: false
+    device-trust:
+      trust-days: 30
 
-在 Mapper 方法上添加 `@DataScope` 注解即可启用数据权限过滤：
+## 可观测性配置（必须）
 
-```java
-@DataScope(deptAlias = "d", userAlias = "u")
-List<SysUser> selectUserList(SysUser user);
-```
+> ⚠️ 所有服务的链路追踪和监控指标依赖以下 Nacos 共享配置，缺少会导致 Prometheus 抓取 404、Zipkin 无数据。
 
-## 多租户（预留）
-
-在配置中启用：
+请在 **Nacos 共享配置**（如 `application-common.yml`）中添加：
 
 ```yaml
-sc:
-  tenant:
-    enabled: true
-    column: tenant_id
-    ignore-tables:
-      - sys_menu
-      - sys_dict_type
+  spring:
+    zipkin:
+      base-url: ${ZIPKIN_BASE_URL:http://localhost:9411}
+    sleuth:
+      sampler:
+        probability: ${SLEUTH_SAMPLER_PROBABILITY:0.1}
+
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: health,info,prometheus,metrics
+    endpoint:
+      health:
+        show-details: when_authorized
+    metrics:
+      tags:
+        application: ${spring.application.name}
+      distribution:
+        percentiles-histogram:
+          http.server.requests: true
 ```
+
+### 日志格式
+
+所有服务已统一日志格式，日志中自动携带 `traceId` 和 `spanId`：
+
+```
+2026-03-20 14:30:00.123 [http-nio-9200-exec-1] [6a3f2b1c4d5e6f7a,8b9c0d1e2f3a4b5c] INFO  c.s.a.c.AuthController - 用户登录成功
+```
+
+接口响应头包含 `X-Trace-Id`，可通过该值在 Zipkin 中查询完整链路。

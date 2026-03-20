@@ -27,4 +27,18 @@ public class OssProperties {
 
     /** 是否使用路径风格访问 (MinIO 必须为 true) */
     private boolean pathStyleAccess = true;
+
+    // ==================== STS 临时凭证配置 ====================
+
+    /** STS 角色 ARN（如 arn:aws:iam::123456:role/oss-upload-role） */
+    private String roleArn;
+
+    /** STS 会话名称 */
+    private String roleSessionName = "sc-oss-upload";
+
+    /** STS 临时凭证有效期（秒），默认 15 分钟，最大 1 小时 */
+    private int stsDurationSeconds = 900;
+
+    /** STS 服务端点（部分私有云如 MinIO 需要自定义） */
+    private String stsEndpoint;
 }

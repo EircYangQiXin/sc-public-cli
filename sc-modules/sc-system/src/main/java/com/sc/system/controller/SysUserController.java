@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -31,8 +32,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SysUserController {
 
+    private static final String INTERNAL_HEADER = "X-SC-Internal";
+    private static final String INTERNAL_SECRET = "sc-internal-feign";
+
     private final ISysUserService userService;
     private final SysUserRoleMapper userRoleMapper;
+    private final HttpServletRequest request;
 
     @ApiOperation("分页查询用户列表")
     @SaCheckPermission("system:user:list")
@@ -41,9 +46,27 @@ public class SysUserController {
         return R.ok(userService.selectUserPage(query));
     }
 
+    /**
+     * 根据用户名获取用户信息（仅限内部 Feign 调用）
+     * <p>
+     * 安全策略:
+     * <ul>
+     *   <li>必须携带内部调用标识头 X-SC-Internal</li>
+     *   <li>返回的 DTO 中 password / mfaSecret 仅在内部调用时包含</li>
+     *   <li>网关应剥离外部请求中的 X-SC-Internal 头</li>
+     * </ul>
+     * </p>
+     */
     @ApiOperation("根据用户名获取用户信息（内部调用）")
     @GetMapping("/info/{username}")
-    public R<com.sc.api.system.dto.SysUserDTO> getUserInfo(@ApiParam(value = "用户名", required = true) @PathVariable String username) {
+    public R<com.sc.api.system.dto.SysUserDTO> getUserInfo(
+            @ApiParam(value = "用户名", required = true) @PathVariable String username) {
+        // 校验内部调用标识
+        String internalToken = request.getHeader(INTERNAL_HEADER);
+        if (!INTERNAL_SECRET.equals(internalToken)) {
+            return R.fail("非法访问");
+        }
+
         return R.ok(userService.selectUserByUsername(username));
     }
 
@@ -97,9 +120,7 @@ public class SysUserController {
     @PutMapping("/{userId}/roles")
     @Transactional(rollbackFor = Exception.class)
     public R<Void> assignRoles(@ApiParam(value = "用户ID", required = true) @PathVariable Long userId, @RequestBody List<Long> roleIds) {
-        // 先删除旧的关联
         userRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>().eq(SysUserRole::getUserId, userId));
-        // 批量插入新的关联
         if (roleIds != null && !roleIds.isEmpty()) {
             for (Long roleId : roleIds) {
                 userRoleMapper.insert(new SysUserRole(userId, roleId));
@@ -107,5 +128,24 @@ public class SysUserController {
         }
         return R.ok("角色分配成功", null);
     }
-}
 
+    /**
+     * 更新用户 MFA 信息（仅限内部 Feign 调用）
+     */
+    @ApiOperation("更新用户 MFA 信息（内部调用）")
+    @PutMapping("/mfa")
+    public R<Void> updateUserMfa(@RequestBody com.sc.api.system.dto.SysUserDTO dto) {
+        // 校验内部调用标识
+        String internalToken = request.getHeader(INTERNAL_HEADER);
+        if (!INTERNAL_SECRET.equals(internalToken)) {
+            return R.fail("非法访问");
+        }
+
+        SysUser user = new SysUser();
+        user.setUserId(dto.getUserId());
+        user.setMfaSecret(dto.getMfaSecret());
+        user.setMfaEnabled(dto.getMfaEnabled());
+        userService.updateUser(user);
+        return R.ok();
+    }
+}

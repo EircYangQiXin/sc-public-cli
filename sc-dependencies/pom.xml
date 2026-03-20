@@ -39,6 +39,7 @@
         <lombok.version>1.18.30</lombok.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <transmittable-thread-local.version>2.14.5</transmittable-thread-local.version>
+        <easyexcel.version>3.3.4</easyexcel.version>
 
         <!-- 内部模块版本 -->
         <sc.version>1.0.0</sc.version>
@@ -114,7 +115,7 @@
             </dependency>
             <dependency>
                 <groupId>cn.dev33</groupId>
-                <artifactId>sa-token-dao-redis-jackson</artifactId>
+                <artifactId>sa-token-redis-jackson</artifactId>
                 <version>${sa-token.version}</version>
             </dependency>
             <dependency>
@@ -144,8 +145,18 @@
                 <artifactId>aws-java-sdk-s3</artifactId>
                 <version>${aws-s3.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.amazonaws</groupId>
+                <artifactId>aws-java-sdk-sts</artifactId>
+                <version>${aws-s3.version}</version>
+            </dependency>
 
             <!-- ==================== 工具 ==================== -->
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>easyexcel</artifactId>
+                <version>${easyexcel.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.github.xiaoymin</groupId>
                 <artifactId>knife4j-openapi2-spring-boot-starter</artifactId>
@@ -225,7 +236,22 @@
             </dependency>
             <dependency>
                 <groupId>com.sc</groupId>
+                <artifactId>sc-common-trace</artifactId>
+                <version>${sc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sc</groupId>
                 <artifactId>sc-api-system</artifactId>
+                <version>${sc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sc</groupId>
+                <artifactId>sc-common-excel</artifactId>
+                <version>${sc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sc</groupId>
+                <artifactId>sc-common-notify</artifactId>
                 <version>${sc.version}</version>
             </dependency>
             <dependency>

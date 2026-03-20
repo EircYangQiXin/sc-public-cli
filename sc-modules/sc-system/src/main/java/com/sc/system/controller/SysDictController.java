@@ -9,8 +9,8 @@ import com.sc.common.log.annotation.OperationLog;
 import com.sc.common.log.enums.BusinessType;
 import com.sc.system.domain.entity.SysDictType;
 import com.sc.system.domain.entity.SysDictData;
-import com.sc.system.mapper.SysDictTypeMapper;
-import com.sc.system.mapper.SysDictDataMapper;
+import com.sc.system.service.ISysDictTypeService;
+import com.sc.system.service.ISysDictDataService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -31,8 +31,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SysDictController {
 
-    private final SysDictTypeMapper dictTypeMapper;
-    private final SysDictDataMapper dictDataMapper;
+    private final ISysDictTypeService dictTypeService;
+    private final ISysDictDataService dictDataService;
 
     // ==================== 字典类型 ====================
 
@@ -46,7 +46,7 @@ public class SysDictController {
             @ApiParam(value = "字典类型") @RequestParam(required = false) String dictType,
             @ApiParam(value = "状态 (0正常 1停用)") @RequestParam(required = false) String status) {
 
-        Page<SysDictType> page = dictTypeMapper.selectPage(
+        Page<SysDictType> page = dictTypeService.page(
                 new Page<>(pageNum, pageSize),
                 new LambdaQueryWrapper<SysDictType>()
                         .like(StringUtils.hasText(dictName), SysDictType::getDictName, dictName)
@@ -59,7 +59,7 @@ public class SysDictController {
     @ApiOperation("根据ID查询字典类型")
     @GetMapping("/type/{dictId}")
     public R<SysDictType> getType(@ApiParam(value = "字典ID", required = true) @PathVariable Long dictId) {
-        return R.ok(dictTypeMapper.selectById(dictId));
+        return R.ok(dictTypeService.getById(dictId));
     }
 
     @ApiOperation("新增字典类型")
@@ -67,7 +67,7 @@ public class SysDictController {
     @OperationLog(title = "字典类型", businessType = BusinessType.INSERT)
     @PostMapping("/type")
     public R<Void> addType(@Validated @RequestBody SysDictType dictType) {
-        dictTypeMapper.insert(dictType);
+        dictTypeService.save(dictType);
         return R.ok();
     }
 
@@ -76,7 +76,7 @@ public class SysDictController {
     @OperationLog(title = "字典类型", businessType = BusinessType.UPDATE)
     @PutMapping("/type")
     public R<Void> editType(@Validated @RequestBody SysDictType dictType) {
-        dictTypeMapper.updateById(dictType);
+        dictTypeService.updateById(dictType);
         return R.ok();
     }
 
@@ -85,7 +85,7 @@ public class SysDictController {
     @OperationLog(title = "字典类型", businessType = BusinessType.DELETE)
     @DeleteMapping("/type/{dictIds}")
     public R<Void> removeType(@ApiParam(value = "字典ID数组", required = true) @PathVariable Long[] dictIds) {
-        dictTypeMapper.deleteBatchIds(Arrays.asList(dictIds));
+        dictTypeService.removeByIds(Arrays.asList(dictIds));
         return R.ok();
     }
 
@@ -94,11 +94,7 @@ public class SysDictController {
     @ApiOperation("根据字典类型查询数据列表")
     @GetMapping("/data/type/{dictType}")
     public R<List<SysDictData>> dataByType(@ApiParam(value = "字典类型", required = true) @PathVariable String dictType) {
-        List<SysDictData> list = dictDataMapper.selectList(
-                new LambdaQueryWrapper<SysDictData>()
-                        .eq(SysDictData::getDictType, dictType)
-                        .orderByAsc(SysDictData::getDictSort));
-        return R.ok(list);
+        return R.ok(dictDataService.selectByDictType(dictType));
     }
 
     @ApiOperation("分页查询字典数据")
@@ -110,7 +106,7 @@ public class SysDictController {
             @ApiParam(value = "字典类型") @RequestParam(required = false) String dictType,
             @ApiParam(value = "字典标签") @RequestParam(required = false) String dictLabel) {
 
-        Page<SysDictData> page = dictDataMapper.selectPage(
+        Page<SysDictData> page = dictDataService.page(
                 new Page<>(pageNum, pageSize),
                 new LambdaQueryWrapper<SysDictData>()
                         .eq(StringUtils.hasText(dictType), SysDictData::getDictType, dictType)
@@ -125,7 +121,7 @@ public class SysDictController {
     @OperationLog(title = "字典数据", businessType = BusinessType.INSERT)
     @PostMapping("/data")
     public R<Void> addData(@Validated @RequestBody SysDictData dictData) {
-        dictDataMapper.insert(dictData);
+        dictDataService.save(dictData);
         return R.ok();
     }
 
@@ -134,7 +130,7 @@ public class SysDictController {
     @OperationLog(title = "字典数据", businessType = BusinessType.UPDATE)
     @PutMapping("/data")
     public R<Void> editData(@Validated @RequestBody SysDictData dictData) {
-        dictDataMapper.updateById(dictData);
+        dictDataService.updateById(dictData);
         return R.ok();
     }
 
@@ -143,7 +139,7 @@ public class SysDictController {
     @OperationLog(title = "字典数据", businessType = BusinessType.DELETE)
     @DeleteMapping("/data/{dictCodes}")
     public R<Void> removeData(@ApiParam(value = "字典编码数组", required = true) @PathVariable Long[] dictCodes) {
-        dictDataMapper.deleteBatchIds(Arrays.asList(dictCodes));
+        dictDataService.removeByIds(Arrays.asList(dictCodes));
         return R.ok();
     }
 }
