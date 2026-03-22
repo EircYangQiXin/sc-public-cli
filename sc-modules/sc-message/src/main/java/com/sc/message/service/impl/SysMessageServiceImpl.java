@@ -22,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.dao.DuplicateKeyException;
+
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -139,6 +141,10 @@ public class SysMessageServiceImpl extends ServiceImpl<SysMessageMapper, SysMess
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void internalSend(String title, String content, Integer priority, List<Long> receiverIds) {
+        if (receiverIds == null || receiverIds.isEmpty()) {
+            throw new ServiceException("接收人列表不能为空");
+        }
+
         SysMessage message = new SysMessage();
         message.setTitle(title);
         message.setContent(content);
@@ -149,11 +155,9 @@ public class SysMessageServiceImpl extends ServiceImpl<SysMessageMapper, SysMess
         message.setSenderName("系统");
         this.save(message);
 
-        if (receiverIds != null && !receiverIds.isEmpty()) {
-            batchInsertReceivers(message.getMessageId(), receiverIds);
-        }
+        batchInsertReceivers(message.getMessageId(), receiverIds);
         log.info("内部站内信已入库: messageId={}, receiverCount={}",
-                message.getMessageId(), receiverIds != null ? receiverIds.size() : 0);
+                message.getMessageId(), receiverIds.size());
     }
 
     // ==================== 私有方法 ====================
@@ -223,7 +227,7 @@ public class SysMessageServiceImpl extends ServiceImpl<SysMessageMapper, SysMess
                 receiverMapper.updateById(receiver);
             }
         } else {
-            // 可能是全员公告，插入已读记录
+            // 可能是全员公告，插入已读记录（并发幂等：唯一索引冲突时忽略）
             SysMessage message = this.getById(messageId);
             if (message != null && "ALL".equals(message.getSendScope())) {
                 SysMessageReceiver newReceiver = SysMessageReceiver.builder()
@@ -232,7 +236,12 @@ public class SysMessageServiceImpl extends ServiceImpl<SysMessageMapper, SysMess
                         .isRead(1)
                         .readTime(LocalDateTime.now())
                         .build();
-                receiverMapper.insert(newReceiver);
+                try {
+                    receiverMapper.insert(newReceiver);
+                } catch (DuplicateKeyException e) {
+                    // 并发场景：另一个线程已插入，忽略
+                    log.debug("全员公告已读记录已存在，忽略: messageId={}, userId={}", messageId, userId);
+                }
             }
         }
     }
@@ -261,7 +270,12 @@ public class SysMessageServiceImpl extends ServiceImpl<SysMessageMapper, SysMess
                         .isRead(1)
                         .readTime(LocalDateTime.now())
                         .build();
-                receiverMapper.insert(receiver);
+                try {
+                    receiverMapper.insert(receiver);
+                } catch (DuplicateKeyException e) {
+                    // 并发场景：另一个线程已插入，忽略
+                    log.debug("全员公告已读记录已存在，忽略: messageId={}, userId={}", broadcast.getMessageId(), userId);
+                }
             }
         }
     }

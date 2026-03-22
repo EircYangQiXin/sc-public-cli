@@ -1,6 +1,7 @@
 package com.sc.system.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import cn.dev33.satoken.same.SaSameUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sc.common.core.domain.R;
 import com.sc.common.core.domain.PageResult;
@@ -20,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -32,12 +32,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SysUserController {
 
-    private static final String INTERNAL_HEADER = "X-SC-Internal";
-    private static final String INTERNAL_SECRET = "sc-internal-feign";
-
     private final ISysUserService userService;
     private final SysUserRoleMapper userRoleMapper;
-    private final HttpServletRequest request;
 
     @ApiOperation("分页查询用户列表")
     @SaCheckPermission("system:user:list")
@@ -49,24 +45,15 @@ public class SysUserController {
     /**
      * 根据用户名获取用户信息（仅限内部 Feign 调用）
      * <p>
-     * 安全策略:
-     * <ul>
-     *   <li>必须携带内部调用标识头 X-SC-Internal</li>
-     *   <li>返回的 DTO 中 password / mfaSecret 仅在内部调用时包含</li>
-     *   <li>网关应剥离外部请求中的 X-SC-Internal 头</li>
-     * </ul>
+     * 使用 Sa-Token Same-Token 机制做服务间鉴权，
+     * 无法被外部伪造（Same-Token 基于密钥动态生成）。
      * </p>
      */
     @ApiOperation("根据用户名获取用户信息（内部调用）")
     @GetMapping("/info/{username}")
     public R<com.sc.api.system.dto.SysUserDTO> getUserInfo(
             @ApiParam(value = "用户名", required = true) @PathVariable String username) {
-        // 校验内部调用标识
-        String internalToken = request.getHeader(INTERNAL_HEADER);
-        if (!INTERNAL_SECRET.equals(internalToken)) {
-            return R.fail("非法访问");
-        }
-
+        SaSameUtil.checkCurrentRequestToken();
         return R.ok(userService.selectUserByUsername(username));
     }
 
@@ -135,11 +122,7 @@ public class SysUserController {
     @ApiOperation("更新用户 MFA 信息（内部调用）")
     @PutMapping("/mfa")
     public R<Void> updateUserMfa(@RequestBody com.sc.api.system.dto.SysUserDTO dto) {
-        // 校验内部调用标识
-        String internalToken = request.getHeader(INTERNAL_HEADER);
-        if (!INTERNAL_SECRET.equals(internalToken)) {
-            return R.fail("非法访问");
-        }
+        SaSameUtil.checkCurrentRequestToken();
 
         SysUser user = new SysUser();
         user.setUserId(dto.getUserId());
@@ -155,11 +138,7 @@ public class SysUserController {
     @ApiOperation("根据角色ID列表查询用户ID列表（内部调用）")
     @PostMapping("/internal/user-ids-by-roles")
     public R<List<Long>> getUserIdsByRoleIds(@RequestBody List<Long> roleIds) {
-        // 校验内部调用标识
-        String internalToken = request.getHeader(INTERNAL_HEADER);
-        if (!INTERNAL_SECRET.equals(internalToken)) {
-            return R.fail("非法访问");
-        }
+        SaSameUtil.checkCurrentRequestToken();
 
         if (roleIds == null || roleIds.isEmpty()) {
             return R.ok(java.util.Collections.<Long>emptyList());
