@@ -1,5 +1,6 @@
 package com.sc.common.notify.channel;
 
+import com.sc.common.notify.annotation.DefaultChannel;
 import com.sc.common.notify.domain.NotifyRequest;
 import com.sc.common.notify.domain.NotifyResult;
 import com.sc.common.notify.enums.ChannelType;
@@ -13,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
  * </p>
  */
 @Slf4j
+@DefaultChannel
 public class InAppChannel implements NotificationChannel {
 
     @Override
@@ -33,3 +35,4 @@ public class InAppChannel implements NotificationChannel {
         return NotifyResult.ok("站内信已接收（待业务层处理）");
     }
 }
+

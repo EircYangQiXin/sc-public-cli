@@ -25,11 +25,13 @@ public class NotifyAutoConfiguration {
      * <p>
      * 业务方可通过以下方式替换：
      * <ol>
-     *   <li>继承 {@link SmsChannel} 并注册为 Bean（覆盖此默认 Bean）</li>
-     *   <li>实现 {@link com.sc.common.notify.channel.NotificationChannel} 接口，
-     *       {@code getChannelType()} 返回 {@code ChannelType.SMS}，
-     *       并注册为 Bean + 标注 {@code @Primary}
-     *       （此时默认 SmsChannel 仍有效，但 {@code @Primary} 实现优先）</li>
+     *   <li><b>推荐：</b>继承 {@link SmsChannel} 并注册为 Bean，
+     *       {@code @ConditionalOnMissingBean(SmsChannel.class)} 会阻止此默认 Bean 创建</li>
+     *   <li>直接实现 {@link com.sc.common.notify.channel.NotificationChannel} 接口，
+     *       {@code getChannelType()} 返回 {@code ChannelType.SMS}，注册为 Bean。
+     *       {@link com.sc.common.notify.service.NotificationService} 会识别默认实现上的
+     *       {@link com.sc.common.notify.annotation.DefaultChannel @DefaultChannel} 标记，
+     *       始终优先选用用户自定义实现</li>
      * </ol>
      * </p>
      */
@@ -48,3 +50,4 @@ public class NotifyAutoConfiguration {
         return new InAppChannel();
     }
 }
+

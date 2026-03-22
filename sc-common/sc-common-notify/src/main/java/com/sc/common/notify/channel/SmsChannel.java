@@ -1,5 +1,6 @@
 package com.sc.common.notify.channel;
 
+import com.sc.common.notify.annotation.DefaultChannel;
 import com.sc.common.notify.domain.NotifyRequest;
 import com.sc.common.notify.domain.NotifyResult;
 import com.sc.common.notify.enums.ChannelType;
@@ -10,13 +11,16 @@ import lombok.extern.slf4j.Slf4j;
  * <p>
  * 当前为预留实现，业务方可通过以下方式接入具体短信服务商：
  * <ol>
- *   <li>继承此类并重写 {@link #doSend} 方法，将子类注册为 Spring Bean 即可替换默认实现</li>
+ *   <li><b>推荐：</b>继承此类并重写 {@link #doSend} 方法，将子类注册为 Spring Bean。
+ *       由于 {@code @ConditionalOnMissingBean(SmsChannel.class)}，默认 Bean 不会被创建。</li>
+ *   <li>直接实现 {@link NotificationChannel} 接口，{@code getChannelType()} 返回 {@code ChannelType.SMS}，
+ *       注册为 Spring Bean。{@link com.sc.common.notify.service.NotificationService} 会自动识别
+ *       本类上的 {@link DefaultChannel @DefaultChannel} 标记，始终优先选用用户自定义实现。</li>
  * </ol>
- * 不建议直接实现 {@link NotificationChannel} 接口返回 {@code ChannelType.SMS}，
- * 这样会导致容器中存在两个 SMS 渠道 Bean、路由取决于 Bean 加载顺序。
  * </p>
  */
 @Slf4j
+@DefaultChannel
 public class SmsChannel implements NotificationChannel {
 
     @Override
