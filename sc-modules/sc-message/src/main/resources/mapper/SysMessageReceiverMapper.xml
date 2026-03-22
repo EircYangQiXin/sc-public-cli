@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sc.message.mapper.SysMessageReceiverMapper">
+
+    <!--
+        查询用户消息列表：定向消息 UNION 全员公告（排除已有接收人记录的公告，避免重复）
+        全员公告在用户首次阅读时会插入 receiver 记录，之后该公告从第二支变为第一支输出，不会重复。
+    -->
+    <select id="selectUserMessages" resultType="com.sc.message.domain.vo.MessageVO">
+        SELECT * FROM (
+            <!-- 1. 通过接收人表直接关联的消息（包含定向消息 + 已读过的全员公告） -->
+            SELECT m.message_id, m.title, m.content, m.msg_type, m.priority, m.sender_name, m.create_time,
+                   r.is_read, r.read_time
+            FROM sys_message m
+            INNER JOIN sys_message_receiver r ON m.message_id = r.message_id
+            WHERE r.receiver_id = #{userId}
+              AND m.del_flag = 0
+            UNION ALL
+            <!-- 2. 全员公告中尚未产生接收人记录的（即未读的公告） -->
+            SELECT m.message_id, m.title, m.content, m.msg_type, m.priority, m.sender_name, m.create_time,
+                   0 AS is_read, NULL AS read_time
+            FROM sys_message m
+            WHERE m.send_scope = 'ALL'
+              AND m.del_flag = 0
+              AND NOT EXISTS (
+                  SELECT 1 FROM sys_message_receiver r2
+                  WHERE r2.message_id = m.message_id AND r2.receiver_id = #{userId}
+              )
+        ) t
+        <where>
+            <if test="query.msgType != null">
+                AND t.msg_type = #{query.msgType}
+            </if>
+            <if test="query.isRead != null">
+                AND t.is_read = #{query.isRead}
+            </if>
+            <if test="query.keyword != null and query.keyword != ''">
+                AND t.title LIKE CONCAT('%', #{query.keyword}, '%')
+            </if>
+        </where>
+        ORDER BY t.create_time DESC
+        LIMIT #{offset}, #{query.pageSize}
+    </select>
+
+    <!-- 统计用户消息总数（同上逻辑，避免重复） -->
+    <select id="countUserMessages" resultType="long">
+        SELECT COUNT(*) FROM (
+            SELECT m.message_id, m.msg_type, m.title, r.is_read
+            FROM sys_message m
+            INNER JOIN sys_message_receiver r ON m.message_id = r.message_id
+            WHERE r.receiver_id = #{userId}
+              AND m.del_flag = 0
+            UNION ALL
+            SELECT m.message_id, m.msg_type, m.title, 0 AS is_read
+            FROM sys_message m
+            WHERE m.send_scope = 'ALL'
+              AND m.del_flag = 0
+              AND NOT EXISTS (
+                  SELECT 1 FROM sys_message_receiver r2
+                  WHERE r2.message_id = m.message_id AND r2.receiver_id = #{userId}
+              )
+        ) t
+        <where>
+            <if test="query.msgType != null">
+                AND t.msg_type = #{query.msgType}
+            </if>
+            <if test="query.isRead != null">
+                AND t.is_read = #{query.isRead}
+            </if>
+            <if test="query.keyword != null and query.keyword != ''">
+                AND t.title LIKE CONCAT('%', #{query.keyword}, '%')
+            </if>
+        </where>
+    </select>
+
+    <!-- 统计用户指定类型未读数（定向消息） -->
+    <select id="countUnreadByType" resultType="int">
+        SELECT COUNT(*)
+        FROM sys_message m
+        INNER JOIN sys_message_receiver r ON m.message_id = r.message_id
+        WHERE r.receiver_id = #{userId}
+          AND r.is_read = 0
+          AND m.del_flag = 0
+        <if test="msgType != null">
+          AND m.msg_type = #{msgType}
+        </if>
+    </select>
+
+    <!-- 统计用户全员公告未读数（仅统计尚无 receiver 记录的公告） -->
+    <select id="countBroadcastUnread" resultType="int">
+        SELECT COUNT(*)
+        FROM sys_message m
+        WHERE m.send_scope = 'ALL'
+          AND m.del_flag = 0
+          AND NOT EXISTS (
+              SELECT 1 FROM sys_message_receiver r2
+              WHERE r2.message_id = m.message_id AND r2.receiver_id = #{userId}
+          )
+        <if test="msgType != null">
+          AND m.msg_type = #{msgType}
+        </if>
+    </select>
+
+    <!-- 查询消息详情（仅限当前用户可见的消息） -->
+    <select id="selectMessageDetail" resultType="com.sc.message.domain.vo.MessageVO">
+        SELECT m.message_id, m.title, m.content, m.msg_type, m.priority, m.sender_name, m.create_time,
+               COALESCE(r.is_read, 0) AS is_read, r.read_time
+        FROM sys_message m
+        LEFT JOIN sys_message_receiver r ON m.message_id = r.message_id AND r.receiver_id = #{userId}
+        WHERE m.message_id = #{messageId}
+          AND m.del_flag = 0
+          AND (
+              <!-- 当前用户是接收人 -->
+              EXISTS (SELECT 1 FROM sys_message_receiver r3
+                      WHERE r3.message_id = m.message_id AND r3.receiver_id = #{userId})
+              <!-- 或者是全员公告 -->
+              OR m.send_scope = 'ALL'
+          )
+        LIMIT 1
+    </select>
+
+</mapper>
