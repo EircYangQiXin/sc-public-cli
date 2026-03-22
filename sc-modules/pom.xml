@@ -16,6 +16,7 @@
     <modules>
         <module>sc-system</module>
         <module>sc-demo</module>
+        <module>sc-message</module>
     </modules>
 
 </project>

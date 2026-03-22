@@ -27,9 +27,11 @@ sc-public-cli
 ├── sc-auth             # 认证服务（登录、验证码、令牌管理）
 ├── sc-modules
 │   ├── sc-system       # 系统管理（用户/角色/菜单/字典/配置/日志/OSS）
+│   ├── sc-message      # 站内信服务（消息/公告/未读管理）
 │   └── sc-demo         # 示例服务
 ├── sc-api
-│   └── sc-api-system   # System 模块 Feign API
+│   ├── sc-api-system   # System 模块 Feign API
+│   └── sc-api-message  # Message 模块 Feign API
 ├── sc-common
 │   ├── sc-common-core      # 核心工具（R/异常/上下文/工具类）
 │   ├── sc-common-redis     # Redis 缓存（CacheUtils/限流/防重复提交）
@@ -39,6 +41,7 @@ sc-public-cli
 │   ├── sc-common-log       # 操作日志（注解+切面+事件）
 │   ├── sc-common-oss       # 对象存储（S3 + STS 前端直传）
 │   ├── sc-common-mq        # 消息队列（RabbitMQ 工具封装）
+│   ├── sc-common-notify    # 统一通知（多渠道抽象）
 │   ├── sc-common-seata     # 分布式事务
 │   ├── sc-common-xxljob    # 任务调度
 │   └── sc-common-trace     # 链路追踪与监控（Sleuth/Zipkin/Actuator/Micrometer 统一管理）
@@ -66,18 +69,33 @@ mvn clean install -DskipTests
 ### 启动顺序
 
 1. Nacos、MySQL、Redis
-2. `sc-gateway` (端口 8080)
+2. `sc-gateway` (端口 8858)
 3. `sc-auth` (端口 9200)
 4. `sc-system` (端口 9201)
+5. `sc-message` (端口 9203)
+
+### Nacos 共享配置
+
+各服务都依赖 `application-common.yml` 共享配置，首次启动前需导入：
+
+1. 复制 `config/application-common.yml.example` 的内容
+2. 在 Nacos 控制台新建配置：
+   - **Data ID**: `application-common.yml`
+   - **Group**: `DEFAULT_GROUP`
+   - **格式**: YAML
+3. 根据实际环境修改配置值（Redis 地址、密码等）
+4. 环境变量可参考项目根目录 `.env.example`
 
 ### 默认账号
+
+> ⚠️ **以下凭据仅用于本地开发演示，生产环境部署前务必全部修改！**
 
 - 用户名：`admin`
 - 密码：`admin123`
 
 ### 接口文档
 
-启动后访问网关聚合文档：`http://localhost:8080/doc.html`
+启动后访问网关聚合文档：`http://localhost:8858/doc.html`
 
 ## 内置功能
 

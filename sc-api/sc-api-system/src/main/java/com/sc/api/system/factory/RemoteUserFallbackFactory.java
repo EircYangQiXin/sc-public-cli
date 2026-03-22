@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 /**
  * 用户远程调用降级处理
  */
@@ -26,6 +28,11 @@ public class RemoteUserFallbackFactory implements FallbackFactory<RemoteUserServ
             @Override
             public R<Void> updateUserMfa(SysUserDTO dto) {
                 return R.fail("更新用户MFA信息失败: " + cause.getMessage());
+            }
+
+            @Override
+            public R<List<Long>> getUserIdsByRoleIds(List<Long> roleIds) {
+                return R.fail("查询角色用户失败: " + cause.getMessage());
             }
         };
     }

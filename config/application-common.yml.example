@@ -1,0 +1,70 @@
+# =========================================================
+# Nacos 共享配置样例 — application-common.yml
+# =========================================================
+# 使用方式：
+#   1. 将本文件内容（去掉 .example 后缀的部分）发布到 Nacos 配置中心
+#   2. Data ID:  application-common.yml
+#   3. Group:    DEFAULT_GROUP
+#   4. 各服务 bootstrap.yml 已通过 shared-configs 自动引用此配置
+# =========================================================
+
+# -------------------- Redis --------------------
+spring:
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PWD:}
+    database: 0
+    timeout: 3000ms
+    lettuce:
+      pool:
+        max-active: 16
+        max-idle: 8
+        min-idle: 2
+
+  # -------------------- 链路追踪 --------------------
+  zipkin:
+    base-url: ${ZIPKIN_BASE_URL:http://localhost:9411}
+  sleuth:
+    sampler:
+      probability: ${SLEUTH_SAMPLER_PROBABILITY:0.1}
+
+# -------------------- Sa-Token (Redis 同步) --------------------
+sa-token:
+  alone-redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PWD:}
+    database: 1
+    timeout: 3000ms
+
+# -------------------- Actuator（默认安全暴露） --------------------
+# 默认仅暴露 health / info / prometheus，满足健康检查和 Prometheus 采集
+# 如需调试全量端点，可在 Nacos 上动态覆盖或启用 dev profile
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
+# ==================== 以下为开发/调试环境专用 ====================
+# 如需开启全量 Actuator 端点，请取消以下注释并发布到 Nacos
+# 或者在 Nacos 中新建 application-dev.yml 配置：
+#
+# management:
+#   endpoints:
+#     web:
+#       exposure:
+#         include: "*"
+#   endpoint:
+#     health:
+#       show-details: always

@@ -16,6 +16,7 @@
     <modules>
         <module>sc-api-system</module>
         <module>sc-api-auth</module>
+        <module>sc-api-message</module>
     </modules>
 
 </project>

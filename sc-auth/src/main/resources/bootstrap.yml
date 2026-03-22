@@ -39,4 +39,3 @@ sc:
       - /webjars/**
       - /swagger-resources/**
       - /v3/api-docs/**
-      - /actuator/**

@@ -31,9 +31,14 @@ spring:
           uri: lb://sc-demo
           predicates:
             - Path=/demo/**
+        # 站内信服务
+        - id: sc-message
+          uri: lb://sc-message
+          predicates:
+            - Path=/message/**
     sentinel:
       transport:
-        dashboard: ${SENTINEL_ADDR:localhost:8080}
+        dashboard: ${SENTINEL_ADDR:localhost:8858}
         port: 8719
 
 server:
@@ -58,12 +63,12 @@ knife4j:
       enabled: true
       version: swagger2
 
-# Actuator
+# Actuator — 默认安全暴露，如需全量端点请通过 Nacos application-common.yml 覆盖
 management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: health,info,prometheus
   metrics:
     tags:
       application: ${spring.application.name}

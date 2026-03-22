@@ -148,4 +148,30 @@ public class SysUserController {
         userService.updateUser(user);
         return R.ok();
     }
+
+    /**
+     * 根据角色ID列表查询用户ID列表（仅限内部 Feign 调用）
+     */
+    @ApiOperation("根据角色ID列表查询用户ID列表（内部调用）")
+    @PostMapping("/internal/user-ids-by-roles")
+    public R<List<Long>> getUserIdsByRoleIds(@RequestBody List<Long> roleIds) {
+        // 校验内部调用标识
+        String internalToken = request.getHeader(INTERNAL_HEADER);
+        if (!INTERNAL_SECRET.equals(internalToken)) {
+            return R.fail("非法访问");
+        }
+
+        if (roleIds == null || roleIds.isEmpty()) {
+            return R.ok(java.util.Collections.<Long>emptyList());
+        }
+        List<Long> userIds = userRoleMapper.selectList(
+                new LambdaQueryWrapper<SysUserRole>()
+                        .in(SysUserRole::getRoleId, roleIds)
+                        .select(SysUserRole::getUserId))
+                .stream()
+                .map(SysUserRole::getUserId)
+                .distinct()
+                .collect(java.util.stream.Collectors.toList());
+        return R.ok(userIds);
+    }
 }

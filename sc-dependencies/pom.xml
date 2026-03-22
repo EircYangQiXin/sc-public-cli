@@ -259,6 +259,11 @@
                 <artifactId>sc-api-auth</artifactId>
                 <version>${sc.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.sc</groupId>
+                <artifactId>sc-api-message</artifactId>
+                <version>${sc.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

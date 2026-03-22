@@ -35,12 +35,12 @@ spring.flyway:
   locations: classpath:db/migration
   baseline-on-migrate: true
 
-# Actuator
+# Actuator — 默认安全暴露，如需全量端点请通过 Nacos application-common.yml 覆盖
 management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: health,info,prometheus
   metrics:
     tags:
       application: ${spring.application.name}
@@ -52,8 +52,8 @@ sc:
   security:
     ignore-urls:
       - /system/user/info/**
+      - /system/user/internal/**
       - /doc.html
       - /webjars/**
       - /swagger-resources/**
       - /v3/api-docs/**
-      - /actuator/**

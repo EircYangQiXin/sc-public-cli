@@ -4,10 +4,9 @@ import com.sc.api.system.dto.SysUserDTO;
 import com.sc.api.system.factory.RemoteUserFallbackFactory;
 import com.sc.common.core.domain.R;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 系统用户远程调用接口
@@ -26,4 +25,10 @@ public interface RemoteUserService {
      */
     @PutMapping("/system/user/mfa")
     R<Void> updateUserMfa(@RequestBody SysUserDTO dto);
+
+    /**
+     * 根据角色ID列表查询用户ID列表（内部调用）
+     */
+    @PostMapping("/system/user/internal/user-ids-by-roles")
+    R<List<Long>> getUserIdsByRoleIds(@RequestBody List<Long> roleIds);
 }
