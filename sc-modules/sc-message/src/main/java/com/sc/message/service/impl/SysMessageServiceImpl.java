@@ -43,6 +43,9 @@ public class SysMessageServiceImpl extends ServiceImpl<SysMessageMapper, SysMess
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void sendMessage(MessageSendDTO dto) {
+        // 业务校验：msgType 与 sendScope 的组合约束
+        validateMsgTypeAndScope(dto.getMsgType(), dto.getSendScope());
+
         // 构建消息主体
         SysMessage message = new SysMessage();
         message.setTitle(dto.getTitle());
@@ -211,7 +214,7 @@ public class SysMessageServiceImpl extends ServiceImpl<SysMessageMapper, SysMess
      * 标记单条消息已读
      */
     private void markSingleAsRead(Long userId, Long messageId) {
-        // 先查是否有接收记录（使用 selectList + 取首条，兼容唯一索引前的历史脏数据）
+        // 先查是否有接收记录（使用 LIMIT 1 确保唯一结果）
         List<SysMessageReceiver> receivers = receiverMapper.selectList(
                 new LambdaQueryWrapper<SysMessageReceiver>()
                         .eq(SysMessageReceiver::getMessageId, messageId)
@@ -277,6 +280,22 @@ public class SysMessageServiceImpl extends ServiceImpl<SysMessageMapper, SysMess
                     log.debug("全员公告已读记录已存在，忽略: messageId={}, userId={}", broadcast.getMessageId(), userId);
                 }
             }
+        }
+    }
+
+    /**
+     * 校验 msgType 与 sendScope 的组合合法性
+     * <ul>
+     *   <li>私信（msgType=2）：禁止 sendScope=ALL，私信只能定向发送</li>
+     *   <li>全员发送（sendScope=ALL）：只允许通知（0）或公告（1）</li>
+     * </ul>
+     */
+    private void validateMsgTypeAndScope(Integer msgType, String sendScope) {
+        if (msgType != null && msgType == 2 && "ALL".equals(sendScope)) {
+            throw new ServiceException("私信不允许全员发送，请选择指定用户或角色");
+        }
+        if ("ALL".equals(sendScope) && msgType != null && msgType != 0 && msgType != 1) {
+            throw new ServiceException("全员发送仅支持通知或公告类型");
         }
     }
 }

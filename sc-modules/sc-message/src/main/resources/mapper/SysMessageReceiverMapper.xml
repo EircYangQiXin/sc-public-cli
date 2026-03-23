@@ -21,6 +21,7 @@
                    0 AS is_read, NULL AS read_time
             FROM sys_message m
             WHERE m.send_scope = 'ALL'
+              AND m.msg_type != 2
               AND m.del_flag = 0
               AND NOT EXISTS (
                   SELECT 1 FROM sys_message_receiver r2
@@ -54,6 +55,7 @@
             SELECT m.message_id, m.msg_type, m.title, 0 AS is_read
             FROM sys_message m
             WHERE m.send_scope = 'ALL'
+              AND m.msg_type != 2
               AND m.del_flag = 0
               AND NOT EXISTS (
                   SELECT 1 FROM sys_message_receiver r2
@@ -91,6 +93,7 @@
         SELECT COUNT(*)
         FROM sys_message m
         WHERE m.send_scope = 'ALL'
+          AND m.msg_type != 2
           AND m.del_flag = 0
           AND NOT EXISTS (
               SELECT 1 FROM sys_message_receiver r2
@@ -113,8 +116,8 @@
               <!-- 当前用户是接收人 -->
               EXISTS (SELECT 1 FROM sys_message_receiver r3
                       WHERE r3.message_id = m.message_id AND r3.receiver_id = #{userId})
-              <!-- 或者是全员公告 -->
-              OR m.send_scope = 'ALL'
+              <!-- 或者是全员公告（排除私信类型，防止脏数据泄漏） -->
+              OR (m.send_scope = 'ALL' AND m.msg_type != 2)
           )
         LIMIT 1
     </select>

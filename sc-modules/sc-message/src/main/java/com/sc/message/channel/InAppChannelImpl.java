@@ -32,20 +32,34 @@ public class InAppChannelImpl extends InAppChannel {
     @Override
     protected NotifyResult doSave(NotifyRequest request) {
         try {
-            List<Long> userIds = parseReceiverIds(request.getReceivers());
-            if (userIds.isEmpty()) {
-                log.warn("站内信入库失败：接收人列表为空, title={}", request.getTitle());
-                return NotifyResult.fail("接收人列表为空");
+            ParseResult parseResult = parseReceiverIds(request.getReceivers());
+
+            if (parseResult.userIds.isEmpty()) {
+                String detail = parseResult.failedReceivers.isEmpty()
+                        ? "接收人列表为空"
+                        : "所有接收人均无法解析: " + parseResult.failedReceivers;
+                log.warn("站内信入库失败：{}, title={}", detail, request.getTitle());
+                return NotifyResult.fail(detail);
             }
 
             messageService.internalSend(
                     request.getTitle(),
                     request.getContent(),
                     request.getPriority(),
-                    userIds);
+                    parseResult.userIds);
+
+            // 存在部分无法解析的接收人时，返回部分成功
+            if (!parseResult.failedReceivers.isEmpty()) {
+                String msg = String.format("站内信已入库（%d人成功），但有%d个接收人无法解析: %s",
+                        parseResult.userIds.size(),
+                        parseResult.failedReceivers.size(),
+                        parseResult.failedReceivers);
+                log.warn("站内信部分成功: title={}, failed={}", request.getTitle(), parseResult.failedReceivers);
+                return NotifyResult.partial(msg, parseResult.failedReceivers);
+            }
 
             log.info("站内信已通过 InAppChannelImpl 入库: receivers={}, title={}",
-                    userIds.size(), request.getTitle());
+                    parseResult.userIds.size(), request.getTitle());
             return NotifyResult.ok("站内信已入库");
         } catch (Exception e) {
             log.error("站内信入库异常: {}", e.getMessage(), e);
@@ -54,20 +68,35 @@ public class InAppChannelImpl extends InAppChannel {
     }
 
     /**
-     * 将字符串形式的 receivers 转为 userId 列表
+     * 将字符串形式的 receivers 转为 userId 列表，同时收集无法解析的值
      */
-    private List<Long> parseReceiverIds(List<String> receivers) {
+    private ParseResult parseReceiverIds(List<String> receivers) {
         if (receivers == null || receivers.isEmpty()) {
-            return Collections.emptyList();
+            return new ParseResult(Collections.<Long>emptyList(), Collections.<String>emptyList());
         }
         List<Long> userIds = new ArrayList<Long>(receivers.size());
+        List<String> failed = new ArrayList<String>();
         for (String receiver : receivers) {
             try {
                 userIds.add(Long.parseLong(receiver.trim()));
             } catch (NumberFormatException e) {
                 log.warn("无法解析 receiverId: {}", receiver);
+                failed.add(receiver);
             }
         }
-        return userIds;
+        return new ParseResult(userIds, failed);
+    }
+
+    /**
+     * 接收人解析结果
+     */
+    private static class ParseResult {
+        final List<Long> userIds;
+        final List<String> failedReceivers;
+
+        ParseResult(List<Long> userIds, List<String> failedReceivers) {
+            this.userIds = userIds;
+            this.failedReceivers = failedReceivers;
+        }
     }
 }
